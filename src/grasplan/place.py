@@ -166,6 +166,18 @@ class PlaceTools():
         else:
             self.place_action_server.set_aborted(PlaceObjectResult(success=False))
 
+    def transform_obj_list(self, obj_list: ObjectList, target_frame_id: str) -> ObjectList:
+        self.tf_listener.waitForTransform(obj_list.header.frame_id, target_frame_id, obj_list.header.stamp, rospy.Duration(2.0))
+        result = copy.deepcopy(obj_list)
+        result.header.frame_id = target_frame_id
+        for obj in result.objects:
+            pose_source = PoseStamped()
+            pose_source.header = obj_list.header
+            pose_source.pose = obj.pose
+            pose_target = self.tf_listener.transformPose(target_frame_id, pose_source)
+            obj.pose = pose_target.pose
+        return result
+
     def place_object(self, support_object, observe_before_place=False, number_of_poses=5,\
                      override_disentangle_dont_doit=False, override_observe_before_place_dont_doit=False):
         '''
@@ -198,6 +210,8 @@ class PlaceTools():
         action_client = actionlib.SimpleActionClient(self.place_object_server_name, PlaceAction)
         rospy.loginfo(f'sending place goal to {self.place_object_server_name} action server')
 
+        local_reference_frame = support_object
+
         # generate plane from object surface
         plane = obj_to_plane(support_object, self.scene)
 
@@ -205,13 +219,16 @@ class PlaceTools():
         plane = adjust_plane(plane, 0.05)
 
         # publish plane as marker for visualization purposes
-        self.plane_vis_pub.publish(make_plane_marker_msg(self.global_reference_frame, plane))
+        self.plane_vis_pub.publish(make_plane_marker_msg(
+            local_reference_frame, plane))
         
         # generate random places within the plane
         object_class_tbp = separate_object_class_from_id(object_to_be_placed)[0]
-        place_poses_as_object_list_msg = gen_place_poses_from_plane(object_class_tbp, support_object, plane, self.scene, \
-                frame_id=self.global_reference_frame, number_of_poses=number_of_poses, \
+        place_poses_as_object_list_msg_local = gen_place_poses_from_plane(object_class_tbp, support_object, plane, self.scene, \
+                frame_id=local_reference_frame, number_of_poses=number_of_poses, \
                 min_dist=self.min_dist, ignore_min_dist_list=self.ignore_min_dist_list)
+        
+        place_poses_as_object_list_msg = self.transform_obj_list(place_poses_as_object_list_msg_local)
 
         self.place_poses_pub.publish(place_poses_as_object_list_msg)
 

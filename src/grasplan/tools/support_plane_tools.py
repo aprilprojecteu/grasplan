@@ -285,26 +285,14 @@ def obj_to_plane(support_obj: str, planning_scene: PlanningScene, offset: float 
 
     if len(collision_object.primitives) != 1 or collision_object.primitives[0].type != 1:
         raise ValueError(f"Object '{support_obj}' is not a box")
-     
-    rotation_angle = tf.transformations.euler_from_quaternion(
-        [collision_object.pose.orientation.x, collision_object.pose.orientation.y,
-        collision_object.pose.orientation.z, collision_object.pose.orientation.w]
-    )
-
-    # TODO: this should be checked in a central place and not in each function
-    if rotation_angle[0] != 0 or rotation_angle[1] != 0:
-        raise ValueError(f"Object '{support_obj}' is not aligned with the XY plane")
 
     half_width = collision_object.primitives[0].dimensions[0] / 2
     half_depth = collision_object.primitives[0].dimensions[1] / 2
-    
-    center_point = [collision_object.pose.position.x, collision_object.pose.position.y, collision_object.pose.position.z * 2]
+    half_height = collision_object.primitives[0].dimensions[2] / 2
 
     corner_offsets = [(half_width, half_depth), (-half_width, half_depth), (-half_width, -half_depth), (half_width, -half_depth)]
 
-    return [Point(center_point[0] + dx * math.cos(rotation_angle[2]) - dy * math.sin(rotation_angle[2]),
-             center_point[1] + dx * math.sin(rotation_angle[2]) + dy * math.cos(rotation_angle[2]),
-             center_point[2] + offset) for dx, dy in corner_offsets]
+    return [Point(dx, dy, half_height + offset) for dx, dy in corner_offsets]
 
 def attached_obj_height(attached_obj: str, planning_scene: PlanningScene, offset: float = 0.001) -> float:
     """
