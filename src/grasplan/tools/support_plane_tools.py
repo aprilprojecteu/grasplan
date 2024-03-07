@@ -317,7 +317,7 @@ def attached_obj_height(attached_obj: str, planning_scene: PlanningScene, offset
     if any('power_drill_with_grip' in key for key in planning_scene.get_attached_objects()):
         dimension_index = 1
     half_height_att_obj = list(planning_scene.get_attached_objects().values())[0].object.primitives[0].dimensions[dimension_index] / 2
-    return half_height_att_obj + collision_object.pose.position.z * 2 + offset
+    return half_height_att_obj + collision_object.primitives[0].dimensions[2] / 2 + offset
 
 # Example usage
 if __name__ == '__main__':

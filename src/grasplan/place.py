@@ -216,7 +216,7 @@ class PlaceTools():
         plane = obj_to_plane(support_object, self.scene)
 
         # scale down plane to account for obj width and length
-        plane = adjust_plane(plane, 0.05)
+        plane = adjust_plane(plane, -0.15, -0.15)
 
         # publish plane as marker for visualization purposes
         self.plane_vis_pub.publish(make_plane_marker_msg(
@@ -228,7 +228,7 @@ class PlaceTools():
                 frame_id=local_reference_frame, number_of_poses=number_of_poses, \
                 min_dist=self.min_dist, ignore_min_dist_list=self.ignore_min_dist_list)
         
-        place_poses_as_object_list_msg = self.transform_obj_list(place_poses_as_object_list_msg_local)
+        place_poses_as_object_list_msg = self.transform_obj_list(place_poses_as_object_list_msg_local, self.global_reference_frame)
 
         self.place_poses_pub.publish(place_poses_as_object_list_msg)
 
